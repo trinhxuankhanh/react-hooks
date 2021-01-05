@@ -1,11 +1,21 @@
-import "./App.scss";
-import ColorBox from "./components/ColorBox";
-import TodoList from "./components/TodoList";
+import queryString from "query-string";
 import React, { useEffect, useState } from "react";
-import ToDoForm from "./components/ToDoForm";
+import "./App.scss";
+import Pagination from "./components/Pagination";
+import PostFiltersForm from "./components/PostFiltersForm";
 import PostList from "./components/PostList";
 
 function App() {
+  const [pagination, setPagination] = useState({
+    _page: 1,
+    _limit: 10,
+    _totalRows: 1,
+  });
+  const [filter, setFilter] = useState({
+    _limit: 10,
+    _page: 1,
+    title_like: "",
+  });
   const [posts, setPosts] = useState([]);
   const [todos, setTodos] = useState([
     { id: 1, title: "Tun" },
@@ -30,31 +40,46 @@ function App() {
     setTodos(newTodos);
   };
 
+  const handlePageChange = (newPage) => {
+    setFilter({
+      ...filter,
+      _page: newPage,
+    });
+  };
+
+  const handleFiltersChange = (value) => {
+    setFilter({
+      ...filter,
+      _page: 1,
+      title_like: value.searchTerm,
+    });
+  };
+
   useEffect(() => {
     const fetchPostList = async () => {
       try {
-        const reqURL =
-          "http://js-post-api.herokuapp.com/api/posts?_limit=10&_page=1";
+        const query = queryString.stringify(filter);
+        const reqURL = `http://js-post-api.herokuapp.com/api/posts?${query}`;
 
         const response = await fetch(reqURL);
         const responseJson = await response.json();
 
-        const { data } = responseJson;
+        const { data, pagination } = responseJson;
         setPosts(data);
+        setPagination(pagination);
       } catch (err) {
         console.log(err);
       }
     };
 
     fetchPostList();
-  }, []);
+  }, [filter]);
 
   return (
     <React.Fragment>
       <PostList posts={posts} />
-      <ColorBox />
-      <ToDoForm onSubmitHandle={onSubmitHandleInput} />
-      <TodoList todos={todos} onTodoClick={onClickItem} />
+      <PostFiltersForm onSubmit={handleFiltersChange} />
+      <Pagination pagination={pagination} onPageChange={handlePageChange} />
     </React.Fragment>
   );
 }
